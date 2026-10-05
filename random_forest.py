@@ -47,9 +47,6 @@ def sample_configuration(rng: np.random.Generator) -> Config:
     return config
 
 
-    raise NotImplementedError("Implement sampling or use a package's sampler")
-
-
 def make_classifier(config: Config, n_estimators: int, seed: int) -> RandomForestClassifier:
     """Use {} for the untuned baseline; omitted parameters keep library defaults.
 

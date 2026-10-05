@@ -36,6 +36,16 @@ def sample_configuration(rng: np.random.Generator) -> Config:
     Return the hyperparameters to pass to RandomForestClassifier. Account for
     dependencies between parameters if you extend the example search space.
     """
+    config = { 
+        "max_depth" :SEARCH_SPACE["max_depth"]
+[rng.integers(len(SEARCH_SPACE["max_depth"]))],
+        "max_features": SEARCH_SPACE["max_features"]
+[rng.integers(len(SEARCH_SPACE["max_features"]))],
+        "min_samples_leaf": SEARCH_SPACE["min_samples_leaf"]
+[rng.integers(len(SEARCH_SPACE["min_samples_leaf"]))],
+    }
+    return config
+
 
     raise NotImplementedError("Implement sampling or use a package's sampler")
 
@@ -46,7 +56,7 @@ def make_classifier(config: Config, n_estimators: int, seed: int) -> RandomFores
     Tree count, seed, and parallelism are set here, outside the search space.
     Invalid configurations are left for scikit-learn to reject during fitting.
     """
-
+    
     return RandomForestClassifier(
         n_estimators=n_estimators,
         random_state=seed,

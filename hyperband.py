@@ -8,7 +8,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from random_forest import Config, Evaluator
+from random_forest import Config, Evaluator, sample_configuration
+
+import numpy as np
+import math
 
 
 def optimise_hyperband(
@@ -31,4 +34,29 @@ def optimise_hyperband(
     Return the selected configuration and results needed for your analysis.
     """
 
-    raise NotImplementedError
+    rng = np.random.default_rng(seed)
+    eta = reduction_factor
+    history = []
+    s_max = math.floor(math.log(max_trees / min_trees, eta))
+
+    for s in range(s_max, -1, -1):
+        n = math.ceil((s_max + 1) / (s + 1) * eta ** s)
+        r = max_trees / eta ** s
+        configs = [sample_configuration(rng) for x in range(n)]
+
+        for i in range (s+1):
+            n_i = math.floor(n / eta ** i)
+            r_i = round (r * eta ** i)
+            results = []
+            for config in configs:
+                result = evaluator(config, r_i, seed)
+                result["bracket"] = s
+                result["stage"] = i
+                results.append(result)
+                history.append(result)
+            results.sort(key=lambda res: res["objective"], reverse=True)
+            keep = math.floor(n_i / eta)
+            configs = [res["configuration"] for res in results[:keep]]
+    final = [h for h in history if h["n_trees"] == max_trees]
+    best = max(final, key=lambda h: h["objective"])
+    return best["configuration"], history

@@ -3,12 +3,13 @@
 Implement this loop, connect a package, or use another organisation. Choose how
 to retain the results needed to analyse search progress and computational effort.
 """
-
 from __future__ import annotations
 
 from typing import Any
 
-from random_forest import Config, Evaluator
+from random_forest import Config, Evaluator, sample_configuration
+
+import numpy as np
 
 
 def optimise_random_search(
@@ -25,4 +26,13 @@ def optimise_random_search(
     Return the selected configuration and results needed for your analysis.
     """
 
-    raise NotImplementedError
+    rng = np.random.default_rng(seed)
+    history = []
+
+    for i in range(n_trials):
+        config = sample_configuration(rng)
+        result = evaluator(config, n_trees, seed)
+        history.append(result)
+    best =  max(history, key=lambda r: r["objective"])
+
+    return best["configuration"], history

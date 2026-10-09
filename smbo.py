@@ -16,13 +16,11 @@ def optimise_smbo(
     n_trees: int,
     seed: int,
 ) -> tuple[Config, Any]:
-    """Use SMBO (Optuna TPE) to choose configurations from past evaluations.
+    """Use SMBO (Optuna TPE) to choose configurations from past evaluations."""
 
-    Trains each candidate with n_trees trees, uses up to n_trials evaluations,
-    and selects the best configuration by the validation objective (balanced
-    accuracy, higher is better). Returns the best config and the trial history.
-    """
     optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+    history: list[dict] = []
 
     def objective(trial: optuna.Trial) -> float:
         config = {
@@ -37,6 +35,7 @@ def optimise_smbo(
             ),
         }
         result = evaluator(config, n_trees, seed)
+        history.append(result)
         return result["objective"]
 
     sampler = TPESampler(seed=seed)
@@ -44,14 +43,4 @@ def optimise_smbo(
     study.optimize(objective, n_trials=n_trials)
 
     best_config = dict(study.best_params)
-
-    history = [
-        {
-            "trial": t.number,
-            "params": dict(t.params),
-            "value": t.value,
-        }
-        for t in study.trials
-    ]
-
     return best_config, history

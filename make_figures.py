@@ -49,13 +49,9 @@ for column in ["test_bal_acc", "test_acc", "search_sec"]:
 def best_so_far(run):
     # x = trees trained so far (in full forests), y = best validation score so far
     hist = run["history"]
-    if run["method"] == "smbo":
-        # optuna saves its history differently, every trial is a full forest
-        scores = [h["value"] for h in hist]
-        trees = [MAX_TREES] * len(hist)
-    else:
-        scores = [h["objective"] for h in hist]
-        trees = [h["n_trees"] for h in hist]
+    # older smbo results only have "value" per trial, every trial was a full forest
+    scores = [h["objective"] if "objective" in h else h["value"] for h in hist]
+    trees = [h.get("n_trees", MAX_TREES) for h in hist]
     return np.cumsum(trees) / MAX_TREES, np.maximum.accumulate(scores)
 
 

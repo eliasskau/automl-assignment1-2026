@@ -5,7 +5,8 @@ to save them and record the settings needed to reproduce your study.
 """
 
 from __future__ import annotations
-
+import json
+from datetime import datetime
 import argparse
 from pathlib import Path
 from time import perf_counter
@@ -129,19 +130,30 @@ def run_dataset(name: str, args: argparse.Namespace) -> list[dict[str, Any]]:
         })
     return results
 
-
 def main() -> None:
-    """Run the selected examples; add result saving before the main study."""
-
     args = parse_args()
     names = list(DATASETS) if args.dataset == "all" else [args.dataset]
-    for name in names:
-        print(f"Running {name} with seed {args.seed}", flush=True)
-        results = run_dataset(name, args)
-        # TODO: save results in a format of your choice, along with the settings
-        # needed to reproduce the run. Retain enough information for your plots
-        # and tables. This example only prints final results; it saves no files.
 
+    out_dir = Path("results")
+    out_dir.mkdir(exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_path = out_dir / f"run_{args.profile}_{stamp}.jsonl"
+
+    with out_path.open("w") as f:
+        for name in names:
+            print(f"Running {name} with seed {args.seed}", flush=True)
+            results = run_dataset(name, args)
+            for r in results:
+                f.write(json.dumps(r, default=str) + "\n")
+                f.flush()
+
+    print(f"\nSaved: {out_path}")
+
+    meta = vars(args).copy()
+    meta["profile_settings"] = PROFILES[args.profile]
+    (out_dir / f"meta_{args.profile}_{stamp}.json").write_text(
+        json.dumps(meta, indent=2, default=str)
+    )
 
 if __name__ == "__main__":
     main()

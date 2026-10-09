@@ -13,6 +13,7 @@ from typing import Any
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, balanced_accuracy_score, log_loss
 
 Config = dict[str, Any]
 Evaluator = Callable[[Config, int, int], dict[str, Any]]
@@ -53,7 +54,6 @@ def make_classifier(config: Config, n_estimators: int, seed: int) -> RandomFores
     Tree count, seed, and parallelism are set here, outside the search space.
     Invalid configurations are left for scikit-learn to reject during fitting.
     """
-    
     return RandomForestClassifier(
         n_estimators=n_estimators,
         random_state=seed,
@@ -65,25 +65,20 @@ def make_classifier(config: Config, n_estimators: int, seed: int) -> RandomFores
 def predictive_metrics(
     model: Any, X: np.ndarray, y: np.ndarray
 ) -> dict[str, float]:
-    """TODO: evaluate the fitted model using your chosen predictive metrics.
-
-    Return metric names mapped to scalar values. Choose the prediction outputs
-    your metrics require. Use the same definitions for validation, final testing,
-    and the foundation comparison. This function must not fit the model.
-    """
-
-    raise NotImplementedError("Implement predictive_metrics in random_forest.py")
+    y_pred = model.predict(X)
+    metrics = {
+        "accuracy": float(accuracy_score(y, y_pred)),
+        "balanced_accuracy": float(balanced_accuracy_score(y, y_pred)),
+    }
+    if hasattr(model, "predict_proba"):
+        y_proba = model.predict_proba(X)
+        metrics["log_loss"] = float(log_loss(y, y_proba))
+    return metrics
 
 
 def validation_objective(metrics: dict[str, float]) -> float:
-    """TODO: return the scalar objective used to compare configurations.
-
-    Explain its relationship to the primary metric and whether higher or lower
-    is better. Apply that direction consistently in all optimisers.
-    """
-
-    raise NotImplementedError("Implement validation_objective in random_forest.py")
-
+    """Return balanced accuracy as the objective. Higher is better."""
+    return metrics["balanced_accuracy"]
 
 def make_evaluator(
     X_train: np.ndarray,

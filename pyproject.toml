@@ -7,5 +7,6 @@ requires-python = ">=3.14"
 dependencies = [
     "numpy>=2.5.3",
     "openml>=0.15.1",
+    "optuna>=5.0.0",
     "pandas>=3.0.6",
 ]

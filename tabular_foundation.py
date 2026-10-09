@@ -13,11 +13,10 @@ from data_loading import DataSplits
 
 
 N_CONTEXT = 1_000    # labelled rows given to TabPFN as context
-N_TEST = 5_000       # test rows subsampled for feasibility
 
 
 def run_foundation_model(splits: DataSplits, seed: int) -> Any:
-    """In-context TabPFN with a fixed labelled-data budget and a subsampled test set."""
+    """In-context TabPFN with a fixed labelled-data budget, evaluated on the complete test set."""
     rng = np.random.default_rng(seed)
 
     X_train, y_train = splits.X_train, splits.y_train
@@ -29,18 +28,17 @@ def run_foundation_model(splits: DataSplits, seed: int) -> Any:
     X_ctx = X_train.iloc[ctx_idx].to_numpy()
     y_ctx = y_train[ctx_idx]
 
-    # Test subsample
-    n_test = min(N_TEST, len(X_test))
-    test_idx = rng.choice(len(X_test), size=n_test, replace=False)
-    X_te = X_test.iloc[test_idx].to_numpy()
-    y_te = y_test[test_idx]
+    # Full heldout test set, same as the forest methods
+    X_te = X_test.to_numpy()
+    y_te = y_test
 
-    clf = TabPFNClassifier(device="cpu")
+    clf = TabPFNClassifier(device="cpu", random_state=seed)
 
     start = perf_counter()
     clf.fit(X_ctx, y_ctx)
-    y_pred = clf.predict(X_te)
+    fit_sec = perf_counter() - start
     y_proba = clf.predict_proba(X_te)
+    y_pred = np.argmax(y_proba, axis=1)
     elapsed = perf_counter() - start
 
     return {
@@ -50,7 +48,8 @@ def run_foundation_model(splits: DataSplits, seed: int) -> Any:
             "log_loss": float(log_loss(y_te, y_proba)),
         },
         "elapsed_sec": elapsed,
+        "fit_sec": fit_sec,
+        "predict_sec": elapsed - fit_sec,
         "n_context": n_ctx,
-        "n_test": n_test,
-        "test_idx": test_idx.tolist(),   # so you can re-evaluate forests on the same subset
+        "n_test": int(len(y_te)),
     }
